@@ -27,9 +27,12 @@ const data = {
 };
     
    return (
-      <Box sx={{width:'100%',height:'20px',display:'grid',placeItems:'center'}}>
+     <Box sx={{width:'100%',display:'grid',placeItems:'center'}}>
+     <Box sx={{width:'50%'}}>
       <Doughnut data={data}/>
       </Box>
+     </Box>
+      
           
     )
 

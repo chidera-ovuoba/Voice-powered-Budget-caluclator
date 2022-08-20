@@ -1,9 +1,10 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { TextField, Typography, Select, FormControl, MenuItem, Grid, InputLabel, Button } from '@material-ui/core';
 import useStyles from './styles';
 import { useGlobalContext } from '../../../contexts/context';
 import { v4 as uuidv4 } from 'uuid';
 import { incomeCategories, expenseCategories } from '../../../constant/categories';
+import { useSpeechContext } from "@speechly/react-client";
 
 // const categories = ['Bills', 'Car', 'Clothes', 'Travel', 'Food', 'Shopping', 'House', 'Entertainment', 'Phone', 'Pets'];
 const initialState = {
@@ -18,17 +19,56 @@ const Form = () => {
    const [transaction, setTransaction] = useState(initialState);
   const { addTransaction, dataState, setDataState } = useGlobalContext();
   const [categories, setCategories] = useState(incomeCategories);
-  // const [index, setIndex] = useState(0);
+  // const [words, setWords] = useState([]);
+  const [segmentData, setSegmentData] = useState({});
 
   let index = 0;
-  // console.log(dataState);
-  // transaction.type === 'Income' ? setCategories(incomeCategories):setCategories(expenseCategories) 
+
+
+
+  const { segment } = useSpeechContext()
+
+  useEffect(() => {
+    let index = 0;
+    let categoriesData ;
+    if (segment) {
+      // Handle speech segment and make tentative changes to app state
+      console.log(segment);
+      if (segment.isFinal) {
+        // Handle speech segment and make permanent changes to app state
+        console.log("✅", segment)
+        setSegmentData(segment);
+
+        const date = segment.entities.find((item)=>item.type === 'date')?.value
+        
+        const category = segment.entities.find((item) => item.type === 'category')?.value
+        
+        const amount = segment.entities.find((item) => item.type === 'amount')?.value
+
+           segment.intent.intent === 'add_income' ? categoriesData = incomeCategories : categoriesData = expenseCategories
+        addTransaction({ id: uuidv4(), type: segment.intent.intent === 'add_income' ? 'Income' : 'Expense', amount: amount, category: category, date: date })
+        dataState.some((item,i) => {
+            if (item.type.toUpperCase() === category) {
+              console.log(i);
+              index = i
+              return true
+            }
+            return false
+        }) ? dataState[index].amount += parseFloat(amount) :
+     
+            setDataState([...dataState, { ...categoriesData.filter((item) => item.type.toUpperCase() === category)[0], amount: parseFloat(amount), title: segment.intent.intent === 'add_income'?'Income' : 'Expense' }])
+          setTransaction(initialState);
+          setCategories(incomeCategories)
+      }
+    }
+  }, [segment])
+
 
   return (
       <Grid container spacing={2}>
           <Grid item xs={12}>
-              <Typography align='center' variant='subtitle2' gutterBottom>
-              ...
+              <Typography align='center' variant='subtitle2' sx={{wordBreak:'break-word'}} gutterBottom>
+          {segment?.words?.map((item) => item.value + ' ')}
               </Typography>
           </Grid>
           <Grid item xs={6}>
