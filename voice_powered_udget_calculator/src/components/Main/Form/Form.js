@@ -44,9 +44,9 @@ const Form = () => {
         const category = segment.entities.find((item) => item.type === 'category')?.value
         
         const amount = segment.entities.find((item) => item.type === 'amount')?.value
-
+             
            segment.intent.intent === 'add_income' ? categoriesData = incomeCategories : categoriesData = expenseCategories
-        addTransaction({ id: uuidv4(), type: segment.intent.intent === 'add_income' ? 'Income' : 'Expense', amount: amount, category: category, date: date })
+        addTransaction({ id: uuidv4(), type: segment.intent.intent === 'add_income' ? 'Income' : 'Expense', amount: amount, category:category?.split('').map((letter,i,arr)=> arr[0] === letter ? letter:letter.toLowerCase())?.join(''), date: date })
         dataState.some((item,i) => {
             if (item.type.toUpperCase() === category) {
               console.log(i);
