@@ -33,32 +33,60 @@ const Form = () => {
     let categoriesData ;
     if (segment) {
       // Handle speech segment and make tentative changes to app state
+      // setWords(segment?.words?.map((item) => item.value + ' '));
       console.log(segment);
       if (segment.isFinal) {
         // Handle speech segment and make permanent changes to app state
         console.log("✅", segment)
         setSegmentData(segment);
-
-        const date = segment.entities.find((item)=>item.type === 'date')?.value
         
-        const category = segment.entities.find((item) => item.type === 'category')?.value
+        let title;
+        if (segment.intent.intent === 'add_income') {
+          title = 'Income'
+          categoriesData = incomeCategories 
+        };
+        if (segment.intent.intent === 'add_expense') {
+          title = 'Expense'
+           categoriesData = expenseCategories
+        };
+        segment.words.map((item) => {
+          if (item.value === 'INCOME') {
+            title = 'Income'
+             categoriesData = incomeCategories 
+          }
+          if (item.value === 'EXPENSE') {
+            title = 'Expense'
+             categoriesData = expenseCategories
+          }
+           })
+        const date = segment.entities.find((item) => item.type === 'date')?.value
         
-        const amount = segment.entities.find((item) => item.type === 'amount')?.value
+        const category = segment.entities.find((item) => item.type === 'category')?.value?.split('').map((letter, i) => i === 0 ? letter : letter.toLowerCase())?.join('');
+        
+        const amount = segment.entities.find((item) => item.type === 'amount')?.value;
+        console.log(title , amount, category, new Date(date).toString().includes('Invalid'));
+            
+               
+        if (title && amount && category && false ) {
+          // if (categoriesData.every((item) => item.type !== category)) {
              
-           segment.intent.intent === 'add_income' ? categoriesData = incomeCategories : categoriesData = expenseCategories
-        addTransaction({ id: uuidv4(), type: segment.intent.intent === 'add_income' ? 'Income' : 'Expense', amount: amount, category:category?.split('').map((letter,i,arr)=> arr[0] === letter ? letter:letter.toLowerCase())?.join(''), date: date })
-        dataState.some((item,i) => {
-            if (item.type.toUpperCase() === category) {
+          //   return 
+          // }
+          console.log('in here')
+          
+          addTransaction({ id: uuidv4(), type:title, amount: amount, category: category, date: date })
+          dataState.some((item, i) => {
+            if (item.type === category) {
               console.log(i);
               index = i
               return true
             }
             return false
-        }) ? dataState[index].amount += parseFloat(amount) :
-     
-            setDataState([...dataState, { ...categoriesData.filter((item) => item.type.toUpperCase() === category)[0], amount: parseFloat(amount), title: segment.intent.intent === 'add_income'?'Income' : 'Expense' }])
+          }) ? dataState[index].amount += parseFloat(amount) :
+            setDataState([...dataState, { ...[ categoriesData.find((item) => item.type === category) ? categoriesData.find((item) => item.type === category):{color:'purple',type:category}][0], amount: parseFloat(amount), title: title}])
           setTransaction(initialState);
           setCategories(incomeCategories)
+        }
       }
     }
   }, [segment])
@@ -66,9 +94,10 @@ const Form = () => {
 
   return (
       <Grid container spacing={2}>
+      
           <Grid item xs={12}>
               <Typography align='center' variant='subtitle2' sx={{wordBreak:'break-word'}} gutterBottom>
-          {segment?.words?.map((item) => item.value + ' ')}
+          {segment?.words?.map((item) => item.value + ' ')} 
               </Typography>
           </Grid>
           <Grid item xs={6}>

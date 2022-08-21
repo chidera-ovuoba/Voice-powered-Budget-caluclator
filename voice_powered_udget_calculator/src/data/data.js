@@ -5,7 +5,8 @@ import { Box } from '@material-ui/core';
  const DoughnutContainer = ({title}) => {
     const { dataState } = useGlobalContext();
      const income = dataState.filter((item) => item.title === 'Income');
-     const expense = dataState.filter((item) => item.title === 'Expense');
+   const expense = dataState.filter((item) => item.title === 'Expense');
+   
 const data = {
   labels: title === 'income' ? income.map((item)=>item.type):expense.map((item)=>item.type),
   datasets: [
