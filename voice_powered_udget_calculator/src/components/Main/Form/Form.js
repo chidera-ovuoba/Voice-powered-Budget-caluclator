@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react'
-import { TextField, Typography, Select, FormControl, MenuItem, Grid, InputLabel, Button } from '@material-ui/core';
+import { TextField, Typography, Select, FormControl, MenuItem, Grid, InputLabel, Button, Snackbar} from '@material-ui/core';
+import MuiAlert from '@material-ui/lab/Alert';
 import useStyles from './styles';
 import { useGlobalContext } from '../../../contexts/context';
-import { v4 as uuidv4 } from 'uuid';
 import { incomeCategories, expenseCategories } from '../../../constant/categories';
 import { useSpeechContext } from "@speechly/react-client";
+import Slide from '@material-ui/core/Slide';
 
 // const categories = ['Bills', 'Car', 'Clothes', 'Travel', 'Food', 'Shopping', 'House', 'Entertainment', 'Phone', 'Pets'];
 const initialState = {
@@ -13,16 +14,18 @@ const initialState = {
   type: 'Income',
   date:'2018-07-22'
 }
-
 const Form = () => {
     const classes = useStyles();
-   const [transaction, setTransaction] = useState(initialState);
-  const { addTransaction, dataState, setDataState } = useGlobalContext();
-  const [categories, setCategories] = useState(incomeCategories);
+  const [transaction, setTransaction] = useState(initialState);
+    const [categories, setCategories] = useState(incomeCategories);
+  const { addTransaction, dataState, setDataState,handleClose,openMessage,failedEntity,allEntities,all} = useGlobalContext();
   // const [words, setWords] = useState([]);
+  // const [entities,setEntities] = useState({})
   const [segmentData, setSegmentData] = useState({});
-
-  let index = 0;
+  // const [failedEntity, setFailedEntity] = useState([]);
+  // const [openMessage, setOpenMessage] = useState(false);
+  // const [checked, setChecked] = useState(true);
+  
 
 
 
@@ -64,35 +67,31 @@ const Form = () => {
         const category = segment.entities.find((item) => item.type === 'category')?.value?.split('').map((letter, i) => i === 0 ? letter : letter.toLowerCase())?.join('');
         
         const amount = segment.entities.find((item) => item.type === 'amount')?.value;
-        console.log(title , amount, category, new Date(date).toString().includes('Invalid'));
-            
-               
-        if (title && amount && category && false ) {
-          // if (categoriesData.every((item) => item.type !== category)) {
-             
-          //   return 
-          // }
-          console.log('in here')
-          
-          addTransaction({ id: uuidv4(), type:title, amount: amount, category: category, date: date })
-          dataState.some((item, i) => {
-            if (item.type === category) {
-              console.log(i);
-              index = i
-              return true
-            }
-            return false
-          }) ? dataState[index].amount += parseFloat(amount) :
-            setDataState([...dataState, { ...[ categoriesData.find((item) => item.type === category) ? categoriesData.find((item) => item.type === category):{color:'purple',type:category}][0], amount: parseFloat(amount), title: title}])
-          setTransaction(initialState);
-          setCategories(incomeCategories)
-        }
+        all (title, amount, category, date,categoriesData)
+
+        console.log(title, amount, category, !new Date(date).toString().includes('Invalid'));
       }
     }
   }, [segment])
 
 
-  return (
+
+   return (
+    <>
+      <Snackbar
+        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+        open={openMessage}
+        autoHideDuration={4000}
+         onClose={handleClose}
+        >
+        <MuiAlert
+          elevation={6}
+          variant="filled"
+           severity="error">
+           
+           <Typography variant='subtitle1'>{failedEntity.map((i) => allEntities[i]).join(', ')} {failedEntity.length > 1 ?'were':'is'} not specified</Typography>
+       </MuiAlert>
+       </Snackbar>
       <Grid container spacing={2}>
       
           <Grid item xs={12}>
@@ -152,23 +151,15 @@ const Form = () => {
           </Grid>
           <Grid item xs={12}>
         <Button variant='outlined' color='primary' fullWidth className={classes.button} onClick={() => {
-          addTransaction({ ...transaction, amount: parseFloat(transaction.amount), id: uuidv4() })
-          dataState.some((item,i) => {
-            if (item.type === transaction.category) {
-              // console.log(i);
-              index = i
-              return true
-            }
-            return false
-          }) ?  dataState[index].amount += parseFloat(transaction.amount) :
-            setDataState([...dataState, { ...categories.filter((item) => item.type === transaction.category)[0], amount: parseFloat(transaction.amount), title: transaction.type }])
-          setTransaction(initialState);
-          setCategories(incomeCategories)
+             const { type, amount, category, date } = transaction;
+             all(type, amount, category, date, categories)
+             setTransaction(initialState);
         }}>CREATE</Button>
           </Grid>
 
       </Grid>
-  )
+  </>
+      )
 }
 
 export default Form
