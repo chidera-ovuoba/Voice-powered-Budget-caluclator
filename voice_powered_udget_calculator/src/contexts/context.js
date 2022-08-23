@@ -1,6 +1,6 @@
 import React, { useReducer, createContext,useContext, useState} from "react";
 import { v4 as uuidv4 } from 'uuid';
-import { incomeCategories } from "../constant/categories";
+import { expenseCategories, incomeCategories } from "../constant/categories";
 import reducer from './reducer';
 const initialState = {
     transactions:[]
@@ -15,6 +15,7 @@ export const Provider = ({ children }) => {
     const [dataState, setDataState] = useState([]);
       const [failedEntity, setFailedEntity] = useState([]);
     const [openMessage, setOpenMessage] = useState(false);
+    const [openSnackbar, setOpenSnackbar] = useState({open:false,category:'',type:''});
     // const [transaction, setTransaction] = useState(initialState1);
 
     const deleteTransactions = (id) => {
@@ -43,10 +44,18 @@ export const Provider = ({ children }) => {
         if (type && Number(amount) && category && !new Date(date).toString().includes('Invalid')) {
             // categoriesData.every((item) => item.type !== category)
           if (categoriesData === incomeCategories) {
-             console.log('in here')
-            return 
-          }
+              if (categoriesData.every((item) => item.type !== category) && expenseCategories.some((item) => item.type === category)) {
+                  setOpenSnackbar({open:true,category,type:'Income'});
+                return 
+              }
+           }
+            if (categoriesData === expenseCategories) {
+              if (categoriesData.every((item) => item.type !== category) && incomeCategories.some((item) => item.type === category)) {
+                  setOpenSnackbar({open:true,category,type:'Expense'});
+               return 
+              }
           
+          }
           
           addTransaction({ id: uuidv4(), type, amount, category, date })
           dataState.some((item, i) => {
@@ -63,9 +72,12 @@ export const Provider = ({ children }) => {
         }
     }
 
-     const handleClose = () => {
+     const handleClose1 = () => {
     setOpenMessage(false)
     setFailedEntity([]);
+    }
+      const handleClose2 = () => {
+    setOpenSnackbar({open:false,category:'',type:''})
     }
     // console.log(transactions);
     return (
@@ -76,10 +88,12 @@ export const Provider = ({ children }) => {
             dataState,
             setDataState,
             all,
-            handleClose,
+            handleClose1,
+            handleClose2,
             openMessage,
             failedEntity,
-            allEntities
+            allEntities,
+            ...openSnackbar
         }}>
         {children}
         </ExpenseTrackerContext.Provider>

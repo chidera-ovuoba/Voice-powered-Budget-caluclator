@@ -1,24 +1,25 @@
 import React, { useEffect, useState } from 'react'
-import { TextField, Typography, Select, FormControl, MenuItem, Grid, InputLabel, Button, Snackbar} from '@material-ui/core';
-import MuiAlert from '@material-ui/lab/Alert';
+import { TextField, Typography, Select, FormControl, MenuItem, Grid, InputLabel, Button} from '@material-ui/core';
 import useStyles from './styles';
 import { useGlobalContext } from '../../../contexts/context';
 import { incomeCategories, expenseCategories } from '../../../constant/categories';
 import { useSpeechContext } from "@speechly/react-client";
 import Slide from '@material-ui/core/Slide';
+import Snackbar1 from '../../Snackbar/Snackbar';
+import Snackbar2 from '../../Snackbar/Snackbar2';
 
 // const categories = ['Bills', 'Car', 'Clothes', 'Travel', 'Food', 'Shopping', 'House', 'Entertainment', 'Phone', 'Pets'];
 const initialState = {
-  category:'Deposits',
+  category:'',
   amount: '',
-  type: 'Income',
+  type: '',
   date:'2018-07-22'
 }
 const Form = () => {
     const classes = useStyles();
   const [transaction, setTransaction] = useState(initialState);
     const [categories, setCategories] = useState(incomeCategories);
-  const { addTransaction, dataState, setDataState,handleClose,openMessage,failedEntity,allEntities,all} = useGlobalContext();
+  const { addTransaction, dataState, setDataState,handleClose1,openMessage,failedEntity,allEntities,all,open,handleClose2,category,type} = useGlobalContext();
   // const [words, setWords] = useState([]);
   // const [entities,setEntities] = useState({})
   const [segmentData, setSegmentData] = useState({});
@@ -43,15 +44,52 @@ const Form = () => {
         console.log("✅", segment)
         setSegmentData(segment);
         
+        const date = segment.entities.find((item) => item.type === 'date')?.value
+        
+        const category = segment.entities.find((item) => item.type === 'category')?.value?.split('').map((letter, i) => i === 0 ? letter : letter.toLowerCase())?.join('');
+        
+        const amount = segment.entities.find((item) => item.type === 'amount')?.value;
+
         let title;
         if (segment.intent.intent === 'add_income') {
           title = 'Income'
           categoriesData = incomeCategories 
+         return setTransaction({...transaction,type:'Income'})
         };
         if (segment.intent.intent === 'add_expense') {
           title = 'Expense'
-           categoriesData = expenseCategories
+          categoriesData = expenseCategories
+         return setTransaction({...transaction,type:'Expense'})
         };
+        if (segment.intent.intent === 'create_transaction') {
+           const { type, amount, category, date } = transaction;
+            return all(type, amount, category, date, categories)
+        }
+        if (segment.intent.intent === 'cancel_transaction') {
+         return setDataState([]);
+        }
+        if (segment.intent.intent === 'add_category') {
+          // console.log(incomeCategories.some((item) => item.type === category))
+          if (incomeCategories.some((item) => item.type === category)) {
+            setCategories(incomeCategories)
+          } 
+          // console.log(expenseCategories.some((item) => item.type === category))
+          if (expenseCategories.some((item) => item.type === category)) {
+            setCategories(expenseCategories)
+          }
+          // console.log(categories);
+          return setTransaction({ ...transaction, category });
+          
+        }
+        if (segment.intent.intent === 'add_date') {
+          return setTransaction({...transaction,date})
+        }
+        if (segment.intent.intent === 'add_amount') {
+         return  setTransaction({...transaction,amount})
+         }
+
+        if (!segment.intent.intent) return
+        
         segment.words.map((item) => {
           if (item.value === 'INCOME') {
             title = 'Income'
@@ -62,14 +100,10 @@ const Form = () => {
              categoriesData = expenseCategories
           }
            })
-        const date = segment.entities.find((item) => item.type === 'date')?.value
         
-        const category = segment.entities.find((item) => item.type === 'category')?.value?.split('').map((letter, i) => i === 0 ? letter : letter.toLowerCase())?.join('');
-        
-        const amount = segment.entities.find((item) => item.type === 'amount')?.value;
         all (title, amount, category, date,categoriesData)
 
-        console.log(title, amount, category, !new Date(date).toString().includes('Invalid'));
+        // console.log(title, amount, category, !new Date(date).toString().includes('Invalid'));
       }
     }
   }, [segment])
@@ -78,20 +112,8 @@ const Form = () => {
 
    return (
     <>
-      <Snackbar
-        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
-        open={openMessage}
-        autoHideDuration={4000}
-         onClose={handleClose}
-        >
-        <MuiAlert
-          elevation={6}
-          variant="filled"
-           severity="error">
-           
-           <Typography variant='subtitle1'>{failedEntity.map((i) => allEntities[i]).join(', ')} {failedEntity.length > 1 ?'were':'is'} not specified</Typography>
-       </MuiAlert>
-       </Snackbar>
+       <Snackbar1 handleClose={handleClose1} openMessage={openMessage} failedEntity={failedEntity} allEntities={allEntities} />
+       <Snackbar2 open={open} handleClose={handleClose2} category={category} type={type} />
       <Grid container spacing={2}>
       
           <Grid item xs={12}>
@@ -130,12 +152,13 @@ const Form = () => {
                          setTransaction({...transaction,category:e.target.value})
                        )}
                     >
-            {
+            {  categories.some((item)=>item.type === transaction.category) &&
               categories.map((item, i) => (
                             <MenuItem key={i} value={item.type}>{item.type}</MenuItem>
                           ))
                          
                       }
+                      {categories.every((item)=>item.type !== transaction.category) && <MenuItem value={transaction.category}>{transaction.category}</MenuItem>}
                   </Select>
               </FormControl>
           </Grid>
