@@ -26,6 +26,20 @@ export const Provider = ({ children }) => {
         dispatch({ type: 'ADD_TRANSACTION', payload: transaction });
         // console.log(transaction);
     }
+      function checkCategories(category, categoriesData) {
+            if (categoriesData === incomeCategories) {
+                if (categoriesData.every((item) => item.type !== category) && expenseCategories.some((item) => item.type === category)) {
+                    setOpenSnackbar({ open: true, category, type: 'Income' });
+                    return
+                }
+            }
+            if (categoriesData === expenseCategories) {
+                if (categoriesData.every((item) => item.type !== category) && incomeCategories.some((item) => item.type === category)) {
+                    setOpenSnackbar({ open: true, category, type: 'Expense' });
+                    return
+                }
+            }
+        }  
 
     const all = (title, amount, category, date,categoriesData) => {
         let index = 0;
@@ -39,22 +53,10 @@ export const Provider = ({ children }) => {
             
           }
 });
-      
                
         if (type && Number(amount) && category && !new Date(date).toString().includes('Invalid')) {
-            // categoriesData.every((item) => item.type !== category)
-          if (categoriesData === incomeCategories) {
-              if (categoriesData.every((item) => item.type !== category) && expenseCategories.some((item) => item.type === category)) {
-                  setOpenSnackbar({open:true,category,type:'Income'});
-                return 
-              }
-           }
-            if (categoriesData === expenseCategories) {
-              if (categoriesData.every((item) => item.type !== category) && incomeCategories.some((item) => item.type === category)) {
-                  setOpenSnackbar({open:true,category,type:'Expense'});
-               return 
-              }
-          
+            // categoriesData.every((item) => item.type !== category
+            checkCategories()
           }
           
           addTransaction({ id: uuidv4(), type, amount, category, date })
@@ -70,7 +72,7 @@ export const Provider = ({ children }) => {
         //   setTransaction(initialState);
         //   setCategories(incomeCategories)
         }
-    }
+    
 
      const handleClose1 = () => {
     setOpenMessage(false)
@@ -93,6 +95,7 @@ export const Provider = ({ children }) => {
             openMessage,
             failedEntity,
             allEntities,
+            checkCategories,
             ...openSnackbar
         }}>
         {children}
