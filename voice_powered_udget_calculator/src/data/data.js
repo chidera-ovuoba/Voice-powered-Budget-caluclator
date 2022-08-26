@@ -1,17 +1,20 @@
 import React from 'react'
-import { Doughnut } from 'react-chartjs-2';
+import { Doughnut} from 'react-chartjs-2';
 import { Box } from '@material-ui/core';
+import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
  import { useGlobalContext } from '../contexts/context';
+
+ ChartJS.register(ArcElement, Tooltip, Legend);
  const DoughnutContainer = ({title}) => {
     const { dataState } = useGlobalContext();
      const income = dataState.filter((item) => item.title === 'Income');
    const expense = dataState.filter((item) => item.title === 'Expense');
    
 const data = {
-  labels: title === 'income' ? income.map((item)=>item.type):expense.map((item)=>item.type),
+  labels: title === 'income' ? income.map((item)=>item.type)  :expense.map((item)=>item.type),
   datasets: [
     {
-      label: '# of Votes',
+      label: 'Chart',
       data:   title === 'income' ? income.map((item)=>item.amount):expense.map((item)=>item.amount),
       backgroundColor: title === 'income' ? income.map((item)=>item.color): expense.map((item)=>item.color),
     //   borderColor: [
@@ -25,12 +28,14 @@ const data = {
       borderWidth: 1,
     },
   ]
-};
+   };
+   
     
    return (
      <Box sx={{width:'100%',display:'grid',placeItems:'center'}}>
      <Box sx={{width:'50%'}}>
-      <Doughnut data={data}/>
+      <Doughnut data={data}
+      />
       </Box>
      </Box>
       

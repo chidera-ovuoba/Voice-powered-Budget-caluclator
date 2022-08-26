@@ -11,6 +11,7 @@ export const incomeCategories = [
   { type: 'Salary', amount: 0, color: incomeColors[6] },
   { type: 'Savings', amount: 0, color: incomeColors[7] },
   { type: 'Rental income', amount: 0, color: incomeColors[8] },
+  { type: 'Other Incomes'},
 ];
 
 export const expenseCategories = [
@@ -24,7 +25,7 @@ export const expenseCategories = [
   { type: 'Entertainment', amount: 0, color: expenseColors[7] },
   { type: 'Phone', amount: 0, color: expenseColors[8] },
   { type: 'Pets', amount: 0, color: expenseColors[9] },
-  { type: 'Other', amount: 0, color: expenseColors[10] },
+  { type: 'Other Expenses'}
 ];
 
 export const resetCategories = () => {

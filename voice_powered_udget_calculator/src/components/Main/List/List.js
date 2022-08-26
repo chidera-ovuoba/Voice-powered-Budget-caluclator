@@ -23,10 +23,10 @@ const Lists = () => {
                         <ListItem>
                             <ListItemAvatar>
                                 <Avatar className={item.type === 'Income' ? classes.avatarIncome : classes.avatarExpense}>
-                                    <MoneyOff/>
+                                    <MoneyOff/> 
                                 </Avatar>
                             </ListItemAvatar>
-                            <ListItemText primary={item.category} secondary={`$${item.amount} - ${item.date}`} />
+                            <ListItemText primary={item.category} secondary={`$${item.amount.charAt(0) === '0' ? item.amount.toString().substring(1):item.amount } - ${item.date}`} />
                             <ListItemSecondaryAction>
                                 <IconButton edge='end' aria-label='delete' onClick={() => {
                                     deleteTransactions(item.id)

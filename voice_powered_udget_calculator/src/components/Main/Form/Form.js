@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from 'react'
-import { TextField, Typography, Select, FormControl, MenuItem, Grid, InputLabel, Button} from '@material-ui/core';
+import { TextField, Typography, Select, FormControl, MenuItem, Grid, InputLabel, Button, Box} from '@material-ui/core';
 import useStyles from './styles';
 import { useGlobalContext } from '../../../contexts/context';
 import { incomeCategories, expenseCategories } from '../../../constant/categories';
 import { useSpeechContext } from "@speechly/react-client";
-import Slide from '@material-ui/core/Slide';
+import Slide from '@material-ui/core/Slide'; 
 import Snackbar1 from '../../Snackbar/Snackbar';
 import Snackbar2 from '../../Snackbar/Snackbar2';
+import Dialog from '../../Dialog/Dialog';
 
 // const categories = ['Bills', 'Car', 'Clothes', 'Travel', 'Food', 'Shopping', 'House', 'Entertainment', 'Phone', 'Pets'];
 const initialState = {
@@ -18,8 +19,10 @@ const initialState = {
 const Form = () => {
     const classes = useStyles();
   const [transaction, setTransaction] = useState(initialState);
-    const [categories, setCategories] = useState(incomeCategories);
-  const { addTransaction, dataState,   checkCategories, setDataState,handleClose1,openMessage,failedEntity,allEntities,all,open,handleClose2,category,type} = useGlobalContext();
+  const { addTransaction, dataState, checkCategories, setDataState, handleClose1, openMessage, failedEntity, allEntities, all, open, handleClose2, category, type,
+  setOpenMessage,setFailedEntity,clearTransaction,
+  changeCategories,categories
+  } = useGlobalContext();
   // const [words, setWords] = useState([]);
   // const [entities,setEntities] = useState({})
   const [segmentData, setSegmentData] = useState({});
@@ -27,19 +30,30 @@ const Form = () => {
   // const [failedEntity, setFailedEntity] = useState([]);
   // const [openMessage, setOpenMessage] = useState(false);
   // const [checked, setChecked] = useState(true);
+   const [openDialog, setOpenDialog] = useState(false);
+
+  const handleOpenDialog = () => {
+    setOpenDialog(true);
+  };
+
+  const handleCloseDialog = (category) => {
+    setOpenDialog(false);
+    transaction.category= category
+  };
   
 
 
 
-  const { segment } = useSpeechContext()
+  const { segment } = useSpeechContext();
+let categoriesData ;
 
   useEffect(() => {
     let index = 0;
-    let categoriesData ;
+    
     if (segment) {
       // Handle speech segment and make tentative changes to app state
       // setWords(segment?.words?.map((item) => item.value + ' '));
-      console.log(segment);
+      // console.log(segment);
       if (segment.isFinal) {
         // Handle speech segment and make permanent changes to app state
         console.log("✅", segment)
@@ -53,9 +67,10 @@ const Form = () => {
            const entitiesTypes = ['amount', 'category', 'date']
           //  let segmentEntity ={name:'ovuoba'}
         // console.log(date, amount, category);
-        if (category && transaction.type) {
-            checkCategories(category, categoriesData)
-        }
+        //    if (transaction.category && transaction.type) {
+        //     checkCategories(transaction.category, categoriesData)
+        // }
+       
         const Entity = [amount, category, date]?.map((item, i) => {
           if (item) {
             return {[entitiesTypes[i]]:item};
@@ -72,8 +87,9 @@ const segmentEntity = {}
             segmentEntity[item[0][0]] = item[0][1]
           }
     }); 
-        // console.log(obj)
+        console.log(category)
         let title;
+        
           segment.words.map((item) => {
           if (item.value === 'INCOME' && segment.intent.intent === 'add_income') {
             title = 'Income'
@@ -86,28 +102,36 @@ const segmentEntity = {}
                return setTransaction({ ...transaction, type: 'Expense',...segmentEntity})
           }
           })
-        if (segment.intent.intent === 'add_expense') {
-          title = 'Expense'
-          categoriesData = expenseCategories
-        return setTransaction({ ...transaction, type: 'Expense',...segmentEntity})
-        };
-        if (segment.intent.intent === 'create_transaction') {
-           const { type, amount, category, date } = transaction;
+        
+        if (segment.intent.intent === 'create_transaction' && segment.words.some((item)=>item.value === 'CREATE' || item.value === 'CREATES'))  {
+          const { type, amount, category, date } = transaction;
+               [type, Number(amount), category, !new Date(date).toString().includes('Invalid')].map((item, i) => {
+            if (!item) {
+                setOpenMessage(true);
+                setFailedEntity((prev) => [...prev, i])
+            
+            }
+               });
+          if (transaction.amount && transaction.category && transaction.date && transaction.type) {
             return all(type, amount, category, date, categories)
-        }
+        
+          }  }
+
         if (segment.intent.intent === 'cancel_transaction') {
+                       clearTransaction()
          return setDataState([]);
         }
         if (segment.intent.intent === 'add_category') {
           // console.log(incomeCategories.some((item) => item.type === category))
           if (incomeCategories.some((item) => item.type === category)) {
-            setCategories(incomeCategories)
+              changeCategories(incomeCategories)
           } 
           // console.log(expenseCategories.some((item) => item.type === category))
           if (expenseCategories.some((item) => item.type === category)) {
-            setCategories(expenseCategories)
+              changeCategories(expenseCategories)
           }
           // console.log(categories);
+          
             return setTransaction({ ...transaction,...segmentEntity})
           
         }
@@ -118,33 +142,84 @@ const segmentEntity = {}
           return setTransaction({ ...transaction,...segmentEntity})
          }
 
-        if (!segment.intent.intent) return
+        if (!segment.intent.intent || !segment.entities) return
         
         segment.words.map((item) => {
           if (item.value === 'INCOME' ) {
             title = 'Income'
              categoriesData = incomeCategories 
+          
           }
           if (item.value === 'EXPENSE') {
             title = 'Expense'
             categoriesData = expenseCategories
           }
-           })
-        
-        all (title, amount, category, date,categoriesData)
+           }) 
+           
+        if (title && Number(amount) && category && date && categoriesData) {
+              all (title, amount, category, date,categoriesData)
+           }
 
         // console.log(title, amount, category, !new Date(date).toString().includes('Invalid'));
       }
     }
   }, [segment])
 
+//  console.log(categories)
+    useEffect(() => {
+      // console.log( transaction.category ,categories)
+       if (transaction.category && transaction.type) {
+        console.log('correct')    
+         checkCategories(transaction.category, categories,transaction.type);
+        }
+  },[transaction.category,transaction.type])
 
+  useEffect(() => {
+    transaction.category = '';
+    if (transaction.type === 'Income') {
+        changeCategories(incomeCategories);
+    }
+    if (transaction.type === 'Expense') {
+        changeCategories(expenseCategories);
+    }
+  }, [open])
+  // useEffect(() => {
+  //   const {category} = transaction
+  //       if (incomeCategories.some((item) => item.type === category)) {
+  //           setCategories(incomeCategories)
+  //         }
+  //         // console.log(expenseCategories.some((item) => item.type ===  category))
+  //         if (expenseCategories.some((item) => item.type === category)) {
+  //           setCategories(expenseCategories)
+  //         }
+        
+  // },[transaction.type])
+  function addCustomCategory() {
+    if (categories === incomeCategories) {
+      if (categories.every((item) => item.type !== transaction.category) && transaction.category !== '' && expenseCategories.every((item) => item.type !== transaction.category)) {
+         return true
+      }
+      return false
+    }
+        if (categories === expenseCategories) {
+      if (categories.every((item) => item.type !== transaction.category) && transaction.category !== '' && incomeCategories.every((item) => item.type !== transaction.category)) {
+         return true
+      }
+      return false
+    }
+    return false
+  }
 
+  console.log(categories) 
    return (
     <>
        <Snackbar1 handleClose={handleClose1} openMessage={openMessage} failedEntity={failedEntity} allEntities={allEntities} />
        <Snackbar2 open={open} handleClose={handleClose2} category={category} type={type} />
-      <Grid container spacing={2}>
+       <Dialog open={openDialog} handleClose={handleCloseDialog} />
+       
+       
+       <Grid container spacing={2}>
+         
       
           <Grid item xs={12}>
               <Typography align='center' variant='subtitle2' sx={{wordBreak:'break-word'}} gutterBottom>
@@ -161,7 +236,13 @@ const segmentEntity = {}
                        value={transaction.type}
                          onChange = {(e)=>{
                            setTransaction({ ...transaction, type: e.target.value })
-                           e.target.value === 'Income' ? setCategories(incomeCategories): setCategories(expenseCategories)
+                           console.log(e.target.value === 'Income' ,transaction.category === '')
+                           if (e.target.value === 'Income' && transaction.category === '') {
+                              changeCategories(incomeCategories)
+                           }
+                          if (e.target.value === 'Expense' && transaction.category === '') {
+                               changeCategories(expenseCategories)
+                          }  
                          }}
                     >
                     <MenuItem value={'Income'}>Income</MenuItem>
@@ -178,17 +259,28 @@ const segmentEntity = {}
                        
                       id="income-expense-select"
                       value ={transaction.category}
-                         onChange = {(e)=>(
-                         setTransaction({...transaction,category:e.target.value})
-                       )}
+                         onChange = {(e)=>{
+                           if(incomeCategories.some((item)=>item.type === e.target.value)){
+                             changeCategories(incomeCategories)
+                           }
+                           if(expenseCategories.some((item)=>item.type === e.target.value)){
+                             changeCategories(expenseCategories)
+                           }
+                            setTransaction({ ...transaction, category: e.target.value })
+                         }}
                     >
-            {  categories.some((item)=>item.type === transaction.category) &&
-              categories.map((item, i) => (
-                            <MenuItem key={i} value={item.type}>{item.type}</MenuItem>
-                          ))
+            {  categories.some((item)=>item.type === transaction.category || transaction.category === '') &&
+                 categories.map((item, i) => {
+                   if (item.type.includes('Other')) {
+                    return <MenuItem value={item.type} onClick={handleOpenDialog} key={i}>{item.type}</MenuItem>
+                   }
+                   return <MenuItem key={i} value={item.type}>{item.type}</MenuItem>
+                 })
                          
                       }
-                      {categories.every((item)=>item.type !== transaction.category) && <MenuItem value={transaction.category}>{transaction.category}</MenuItem>}
+               {addCustomCategory() &&<MenuItem value={transaction.category}>{transaction.category}</MenuItem>}
+               {addCustomCategory() &&<MenuItem value='Business'>incomeCategories</MenuItem>}
+               {addCustomCategory() &&<MenuItem value='Bills'>expenseCategories</MenuItem>}
                   </Select>
               </FormControl>
           </Grid>
@@ -198,7 +290,7 @@ const segmentEntity = {}
         />
           </Grid>
           <Grid item xs={6}>
-        <TextField id="standard-basic" label="Date" value={transaction.date} onChange={(e) => setTransaction({ ...transaction, date: e.target.value })} type='date' variant="standard" inputProps={{ pattern: "[0-9]{4}-[0-9]{2}-[0-9]{2}" }}
+        <TextField id="standard-basic" label="Date" value={transaction.date} onChange={(e) => setTransaction({ ...transaction, date: e.target.value })} type='date' variant="standard"
         fullWidth
         />
           </Grid>
@@ -207,12 +299,18 @@ const segmentEntity = {}
              const { type, amount, category, date } = transaction;
              all(type, amount, category, date, categories)
              setTransaction(initialState);
-        }}>CREATE</Button>
+           }}>CREATE</Button>
+           
+           <Button variant='outlined' color="secondary" fullWidth className={classes.button} onClick={() => {
+            clearTransaction()  
+            setDataState([])     
+           }}>CLEAR</Button>
           </Grid>
 
       </Grid>
   </>
       )
 }
+
 
 export default Form
