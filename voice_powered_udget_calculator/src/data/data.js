@@ -6,9 +6,10 @@ import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
 
  ChartJS.register(ArcElement, Tooltip, Legend);
  const DoughnutContainer = ({title}) => {
-    const { dataState } = useGlobalContext();
-     const income = dataState.filter((item) => item.title === 'Income');
-   const expense = dataState.filter((item) => item.title === 'Expense');
+   const { dataState } = useGlobalContext();
+   const filteredDataState = dataState.filter((item)=> item.amount > 0)
+     const income = filteredDataState.filter((item) => item.title === 'Income');
+   const expense = filteredDataState.filter((item) => item.title === 'Expense');
    
 const data = {
   labels: title === 'income' ? income.map((item)=>item.type)  :expense.map((item)=>item.type),
@@ -33,7 +34,7 @@ const data = {
     
    return (
      <Box sx={{width:'100%',display:'grid',placeItems:'center'}}>
-     <Box sx={{width:'50%'}}>
+     <Box sx={{width:'70%'}}>
       <Doughnut data={data}
       />
       </Box>

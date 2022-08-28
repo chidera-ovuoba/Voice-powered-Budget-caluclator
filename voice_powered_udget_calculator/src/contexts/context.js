@@ -1,4 +1,4 @@
-import React, { useReducer, createContext,useContext, useState} from "react";
+import React, { useReducer, createContext,useContext, useState, useEffect} from "react";
 import { v4 as uuidv4 } from 'uuid';
 import { expenseCategories, incomeCategories } from "../constant/categories";
 import reducer from './reducer';
@@ -9,17 +9,30 @@ export const ExpenseTrackerContext = createContext(initialState);
 
 
 const allEntities = ['Title', "Amount", 'Category', 'Date']
+const initialState1 = {
+  category:'',
+  amount: '',
+  type: '',
+    date: '2018-07-22',
+  id:uuidv4()
+}
 
 export const Provider = ({ children }) => {
+    const [transaction, setTransaction] = useState(initialState1);
     const [transactions, dispatch] = useReducer(reducer, initialState);
     const [dataState, setDataState] = useState(JSON.parse(localStorage.getItem('dataState')) || []);
     const [failedEntity, setFailedEntity] = useState([]);
     const [categories, setCategories] = useState(incomeCategories);
     const [openMessage, setOpenMessage] = useState(false);
-    const [openSnackbar, setOpenSnackbar] = useState({open:false,category:'',type:''});
-    // const [transaction, setTransaction] = useState(initialState1);
-    // const localStorageDatastate = localStorage.getItem('dataState');
-    // const localStorageTransactions = localStorage.getItem('transactions');
+    const [openSnackbar, setOpenSnackbar] = useState({ open: false, category: '', type: '' });
+    const [openSnackbarCategory, setOpenSnackbarCategory] = useState(false);
+     const [openSnackbarSuccess, setOpenSnackbarSuccess] = useState(false);
+    const [edit, setEdit] = useState(false);
+    const [editId, setEditId] = useState('');
+    const [editAmount, setEditAmount] = useState(0);
+    const [editTypeAndTitle, setEditTypeAndTitle] = useState({});
+    const [editOpen, setEditOpen] = useState(false);
+    
     const deleteTransactions = (id) => {
         dispatch({type:'DELETE_TRANSACTION',payload:id})
     }
@@ -35,6 +48,21 @@ export const Provider = ({ children }) => {
     const changeCategories = (categories) =>{
         setCategories(categories);
     }
+    useEffect(() => {
+           if (edit) {
+               dataState.map((item) => {
+                    if (item.type === editTypeAndTitle.type && item.title === editTypeAndTitle.title) {
+                        console.log(item.amount,parseFloat(editAmount))
+                        item.amount -= editAmount
+                        
+                        // item.amount = item.amount - parseFloat(editAmount)
+                   }
+                })
+            }
+    }, [edit])
+    // useEffect(() => {
+    //     setDataState((prev) => prev);
+    // }, [edit])
       function checkCategories(category, categoriesData,type) {
         //   console.log('run');
             if (categoriesData === incomeCategories) {
@@ -71,9 +99,9 @@ export const Provider = ({ children }) => {
                 }
             }
         }  
-
-    const all = (title, amount, category, date, categoriesData) => {
-        let index = 0;
+    let index = 0;
+    const all = (title, amount, category, date, categoriesData,id) => {
+         index = 0;
         //       setTransaction({ type: title, amount, category, date });
         // const { type, amount, category, date } = transaction;
         let type = title;
@@ -88,18 +116,28 @@ export const Provider = ({ children }) => {
         if (type && Number(amount) && category && !new Date(date).toString().includes('Invalid')) {
             // categoriesData.every((item) => item.type !== category
             checkCategories(category, categoriesData,type)
-          
-          
-            addTransaction({ id: uuidv4(), type, amount, category, date })
+            if (!edit) {
+                addTransaction({ id: id, type, amount, category, date })
+            }
+            
             dataState.some((item, i) => {
                 if (item.type === category) {
-                    console.log(i);
+                     if (item.title !== type) {
+                        setOpenSnackbarCategory(true)
+                        return
+                    }
+                    // if (edit) {
+                    //     item.amount -= parseFloat(editAmount);
+                    // }
+                   console.log(i);
                     index = i
                     return true
                 }
                 return false
-            }) ? dataState[index].amount += parseFloat(amount) :
-                setDataState([...dataState, { ...[(categoriesData.find((item) => item.type === category) && category) ? categoriesData.find((item) => item.type === category) : { color: `rgb(${Math.floor(Math.random() * 255)},${Math.floor(Math.random() * 255)},${Math.floor(Math.random() * 255)})`, type: category }][0], amount: parseFloat(amount), title: title }])
+            }) ?   dataState[index].amount += parseFloat(amount) :
+                setDataState([...dataState, { ...[(categoriesData.find((item) => item.type === category) && category) ? categoriesData.find((item) => item.type === category) : { color: `rgb(${Math.floor(Math.random() * 255)},${Math.floor(Math.random() * 255)},${Math.floor(Math.random() * 255)})`, type: category }][0], amount: parseFloat(amount), title: title,id:id }])
+                setOpenSnackbarSuccess(true)
+                
             
         }
     }
@@ -109,10 +147,31 @@ export const Provider = ({ children }) => {
     setOpenMessage(false)
     setFailedEntity([]);
     }
+    const handleCloseCategoryMismatch = () => {
+        setOpenSnackbarCategory(false);
+    } 
+    const handleCloseSuccessSnackbar = () => {
+        setOpenSnackbarSuccess(false);
+        setEditOpen(false);
+    } 
       const handleClose2 = () => {
     setOpenSnackbar({open:false,category:'',type:''})
     }
-    // console.log(transactions);
+    const setEditItem = (id) => {
+        setEditId(id);
+        const transactionToEdit = transactions.transactions.find((item) => item.id === id);
+        setTransaction(transactionToEdit);
+        setEditAmount(transactionToEdit.amount)
+        setEditTypeAndTitle({type:transactionToEdit.category,title:transactionToEdit.type})
+        setEdit(true)
+    }
+    const editDone = (transaction) => {
+        dispatch({ type: 'EDIT_DONE', payload: { transaction, editId } })
+        setEditOpen(true);
+    }
+
+
+
     return (
         <ExpenseTrackerContext.Provider value={{
             addTransaction,
@@ -132,7 +191,19 @@ export const Provider = ({ children }) => {
             setFailedEntity,
             clearTransaction,
             changeCategories,
-            categories
+            categories,
+            openSnackbarCategory,
+            handleCloseCategoryMismatch,
+            handleCloseSuccessSnackbar,
+            openSnackbarSuccess,
+            transaction,
+            setTransaction,
+            setEdit,
+            setEditItem,
+            edit,
+            editDone,
+            editOpen,
+            initialState1
           
         }}>
         {children}

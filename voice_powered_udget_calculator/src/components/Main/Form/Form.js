@@ -5,23 +5,21 @@ import { useGlobalContext } from '../../../contexts/context';
 import { incomeCategories, expenseCategories } from '../../../constant/categories';
 import { useSpeechContext } from "@speechly/react-client";
 import Slide from '@material-ui/core/Slide'; 
+import { v4 as uuidv4 } from 'uuid';
 import Snackbar1 from '../../Snackbar/Snackbar';
 import Snackbar2 from '../../Snackbar/Snackbar2';
 import Dialog from '../../Dialog/Dialog';
+import SnackbarCategory from '../../Snackbar/SnackbarCategory';
+import SnackbarSuccess from '../../Snackbar/SnackbarSuccess';
 
 // const categories = ['Bills', 'Car', 'Clothes', 'Travel', 'Food', 'Shopping', 'House', 'Entertainment', 'Phone', 'Pets'];
-const initialState = {
-  category:'',
-  amount: '',
-  type: '',
-  date:'2018-07-22'
-}
+
+
 const Form = () => {
-    const classes = useStyles();
-  const [transaction, setTransaction] = useState(initialState);
+  const classes = useStyles();
   const { addTransaction, dataState, checkCategories, setDataState, handleClose1, openMessage, failedEntity, allEntities, all, open, handleClose2, category, type,
   setOpenMessage,setFailedEntity,clearTransaction,
-  changeCategories,categories
+  changeCategories,categories, openSnackbarCategory,handleCloseCategoryMismatch,handleCloseSuccessSnackbar,openSnackbarSuccess,transaction, setTransaction,edit,setEdit,editDone,initialState1
   } = useGlobalContext();
   // const [words, setWords] = useState([]);
   // const [entities,setEntities] = useState({})
@@ -58,7 +56,7 @@ let categoriesData ;
         // Handle speech segment and make permanent changes to app state
         console.log("✅", segment)
         setSegmentData(segment);
-        
+        // const id = uuidv4();
         const date = segment.entities.find((item) => item.type === 'date')?.value
         
         const category = segment.entities.find((item) => item.type === 'category')?.value?.split('').map((letter, i) => i === 0 ? letter : letter.toLowerCase())?.join('');
@@ -104,7 +102,7 @@ const segmentEntity = {}
           })
         
         if (segment.intent.intent === 'create_transaction' && segment.words.some((item)=>item.value === 'CREATE' || item.value === 'CREATES'))  {
-          const { type, amount, category, date } = transaction;
+          const { type, amount, category, date ,id} = transaction;
                [type, Number(amount), category, !new Date(date).toString().includes('Invalid')].map((item, i) => {
             if (!item) {
                 setOpenMessage(true);
@@ -113,7 +111,7 @@ const segmentEntity = {}
             }
                });
           if (transaction.amount && transaction.category && transaction.date && transaction.type) {
-            return all(type, amount, category, date, categories)
+            return all(type, amount, category, date, categories,id)
         
           }  }
 
@@ -157,7 +155,7 @@ const segmentEntity = {}
            }) 
            
         if (title && Number(amount) && category && date && categoriesData) {
-              all (title, amount, category, date,categoriesData)
+              all (title, amount, category, date,categoriesData,uuidv4())
            }
 
         // console.log(title, amount, category, !new Date(date).toString().includes('Invalid'));
@@ -216,6 +214,8 @@ const segmentEntity = {}
        <Snackbar1 handleClose={handleClose1} openMessage={openMessage} failedEntity={failedEntity} allEntities={allEntities} />
        <Snackbar2 open={open} handleClose={handleClose2} category={category} type={type} />
        <Dialog open={openDialog} handleClose={handleCloseDialog} />
+       <SnackbarCategory open={openSnackbarCategory} handleClose={handleCloseCategoryMismatch}/>
+       <SnackbarSuccess open={openSnackbarSuccess} handleClose={handleCloseSuccessSnackbar} />
        
        
        <Grid container spacing={2}>
@@ -295,11 +295,22 @@ const segmentEntity = {}
         />
           </Grid>
           <Grid item xs={12}>
-        <Button variant='outlined' color='primary' fullWidth className={classes.button} onClick={() => {
-             const { type, amount, category, date } = transaction;
-             all(type, amount, category, date, categories)
-             setTransaction(initialState);
-           }}>CREATE</Button>
+           <Button variant='outlined' color='primary' fullWidth className={classes.button} onClick={() => {
+              const { type, amount, category, date,id } = transaction;
+            all(type, amount, category, date, categories,id)
+             
+             if (edit) {
+               setEdit(false);
+               editDone(transaction)
+             }
+               setTransaction({
+  category:'',
+  amount: '',
+  type: '',
+    date: '2018-07-22',
+  id:uuidv4()
+});
+           }}>{`${edit ? 'EDIT' :'CREATE'}`}</Button>
            
            <Button variant='outlined' color="secondary" fullWidth className={classes.button} onClick={() => {
             clearTransaction()  

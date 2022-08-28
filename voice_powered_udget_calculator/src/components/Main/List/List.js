@@ -1,10 +1,12 @@
 import React from 'react'
 import { List, ListItem, ListItemAvatar, ListItemText, Avatar, ListItemSecondaryAction, IconButton, Slide } from '@material-ui/core';
-import { Delete, MoneyOff } from '@material-ui/icons';
+import { green } from '@material-ui/core/colors';
+import { Delete, MoneyOff,Edit } from '@material-ui/icons';
+// import EditIcon from '@mui/icons-material/Edit';
 import useStyles from './styles';
 import { useGlobalContext } from '../../../contexts/context';
 const Lists = () => {
-    const { deleteTransactions,transactions,setDataState,dataState} = useGlobalContext();
+    const { deleteTransactions,transactions,setDataState,dataState,setEditItem} = useGlobalContext();
     const classes = useStyles();
     let index;
     // console.log(transactions)
@@ -28,6 +30,9 @@ const Lists = () => {
                             </ListItemAvatar>
                             <ListItemText primary={item.category} secondary={`$${item.amount.charAt(0) === '0' ? item.amount.toString().substring(1):item.amount } - ${item.date}`} />
                             <ListItemSecondaryAction>
+                                <IconButton onClick={()=>setEditItem(item.id)}>
+                                    <Edit style={{ color: green[700] }}/>
+                                </IconButton>
                                 <IconButton edge='end' aria-label='delete' onClick={() => {
                                     deleteTransactions(item.id)
                                     console.log(item.category)
@@ -41,7 +46,7 @@ const Lists = () => {
                                   }) ?  dataState[index].amount -= parseFloat(item.amount) :                        
                                     setDataState((prev) => [...prev.filter((data) => data.type !== item.category)])
                                 }}>
-                                <Delete/>
+                                <Delete color='error'/>
                                 </IconButton>
                             </ListItemSecondaryAction>
                         </ListItem>

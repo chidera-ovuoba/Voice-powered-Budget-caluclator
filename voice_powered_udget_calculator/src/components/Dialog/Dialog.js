@@ -6,7 +6,10 @@ const DialogContainer = ({open,handleClose}) => {
     const [categoryField, setCategoryField] = useState('');
     return (
       <div>
-       <Dialog open={open} onClose={()=>handleClose(categoryField)}>
+       <Dialog open={open} onClose={()=> {
+              handleClose(categoryField)
+              setCategoryField('')
+            }}>
         <DialogTitle>Add your Category</DialogTitle>
         <DialogContent>
           <DialogContentText>
@@ -23,7 +26,11 @@ const DialogContainer = ({open,handleClose}) => {
           />
         </DialogContent>
         <DialogActions>
-          <Button onClick={()=>handleClose(categoryField)}>Add</Button>
+            <Button onClick={() => {
+              handleClose(categoryField)
+              setCategoryField('')
+            }
+            }>Add</Button>
         </DialogActions>
       </Dialog>
       </div>

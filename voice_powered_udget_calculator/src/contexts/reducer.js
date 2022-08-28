@@ -10,7 +10,16 @@ const reducer = (state,action) => {
         case 'CLEAR_TRANSACTION':
             localStorage.setItem('transactions', JSON.stringify({ ...state, transactions: [] }))
             localStorage.setItem('dataState', JSON.stringify([]));
-            return {...state,transactions:[]}
+            return { ...state, transactions: [] }
+        case 'EDIT_DONE':
+            const currentTransactions = state.transactions.map((item) => {
+                if (item.id === action.payload.editId) {
+                    return item = action.payload.transaction
+                }
+                return item
+            })
+            localStorage.setItem('transactions', JSON.stringify({ transactions: currentTransactions }));
+            return {...state,transactions:currentTransactions}
         default:
             return state
     } 
