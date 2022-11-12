@@ -1,14 +1,16 @@
-import { Snackbar} from '@material-ui/core'
+import { Snackbar } from '@material-ui/core'
 import MuiAlert from '@material-ui/lab/Alert';
 import React from 'react'
+import { useGlobalContext } from '../../contexts/context';
 
 
-const SnackbarSuccess = ({ open, handleClose }) => {
+const SnackbarEditSuccess = ({ handleClose }) => {
+  const { editOpen } = useGlobalContext();
   return ( 
     <div>
     <Snackbar
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-        open={open}
+        open={editOpen}
         autoHideDuration={4000}
          onClose={handleClose}
         >
@@ -17,11 +19,11 @@ const SnackbarSuccess = ({ open, handleClose }) => {
           variant="filled"
            severity="success">
            
-          Transaction Successful
+         Edit Successful
        </MuiAlert>
        </Snackbar>
       </div>
   )
 }
 
-export default SnackbarSuccess
+export default SnackbarEditSuccess

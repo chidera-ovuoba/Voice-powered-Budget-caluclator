@@ -6,7 +6,10 @@ const DialogContainer = ({open,handleClose}) => {
     const [categoryField, setCategoryField] = useState('');
     return (
       <div>
-       <Dialog open={open} onClose={()=> {
+        <Dialog
+          fullWidth={true}
+      maxWidth="xs"
+          open={open} onClose={() => {
               handleClose(categoryField)
               setCategoryField('')
             }}>
@@ -26,7 +29,9 @@ const DialogContainer = ({open,handleClose}) => {
           />
         </DialogContent>
         <DialogActions>
-            <Button onClick={() => {
+            <Button
+               variant='text' color='primary'
+              onClick={() => {
               handleClose(categoryField)
               setCategoryField('')
             }

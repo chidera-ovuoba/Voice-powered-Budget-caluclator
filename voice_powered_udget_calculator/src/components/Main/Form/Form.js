@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { TextField, Typography, Select, FormControl, MenuItem, Grid, InputLabel, Button, Box} from '@material-ui/core';
+import { TextField, Typography, Select, FormControl, MenuItem, Grid, InputLabel, Button} from '@material-ui/core';
 import useStyles from './styles';
 import { useGlobalContext } from '../../../contexts/context';
 import { incomeCategories, expenseCategories } from '../../../constant/categories';
@@ -11,6 +11,8 @@ import Snackbar2 from '../../Snackbar/Snackbar2';
 import Dialog from '../../Dialog/Dialog';
 import SnackbarCategory from '../../Snackbar/SnackbarCategory';
 import SnackbarSuccess from '../../Snackbar/SnackbarSuccess';
+import SnackbarEditSuccess from '../../Snackbar/SnackbarEditSuccess';
+import DialogConfirmation from '../../Dialog/DialogConfirmation';
 
 // const categories = ['Bills', 'Car', 'Clothes', 'Travel', 'Food', 'Shopping', 'House', 'Entertainment', 'Phone', 'Pets'];
 
@@ -19,9 +21,9 @@ const Form = () => {
   const classes = useStyles();
   const { addTransaction, dataState, checkCategories, setDataState, handleClose1, openMessage, failedEntity, allEntities, all, open, handleClose2, category, type,
   setOpenMessage,setFailedEntity,clearTransaction,
-  changeCategories,categories, openSnackbarCategory,handleCloseCategoryMismatch,handleCloseSuccessSnackbar,openSnackbarSuccess,transaction, setTransaction,edit,setEdit,editDone,initialState1
+  changeCategories,categories, openSnackbarCategory,handleCloseCategoryMismatch,handleCloseSuccessSnackbar,openSnackbarSuccess,transaction, setTransaction,edit,setEdit,editDone,initialState1,setEditItem,transactions, handleCloseEditSuccessSnackbar 
   } = useGlobalContext();
-  // const [words, setWords] = useState([]);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
   // const [entities,setEntities] = useState({})
   const [segmentData, setSegmentData] = useState({});
   // const [segmentEntity, setSegmentEntity] = useState({});
@@ -43,7 +45,9 @@ const Form = () => {
 
 
   const { segment } = useSpeechContext();
-let categoriesData ;
+  let categoriesData;
+  
+  // console.log(transactions);
 
   useEffect(() => {
     let index = 0;
@@ -62,6 +66,7 @@ let categoriesData ;
         const category = segment.entities.find((item) => item.type === 'category')?.value?.split('').map((letter, i) => i === 0 ? letter : letter.toLowerCase())?.join('');
         
         const amount = segment.entities.find((item) => item.type === 'amount')?.value;
+        const index = segment.entities.find((item) => item.type === 'index')?.value;
            const entitiesTypes = ['amount', 'category', 'date']
           //  let segmentEntity ={name:'ovuoba'}
         // console.log(date, amount, category);
@@ -85,7 +90,7 @@ const segmentEntity = {}
             segmentEntity[item[0][0]] = item[0][1]
           }
     }); 
-        console.log(category)
+        // console.log(category)
         let title;
         
           segment.words.map((item) => {
@@ -102,7 +107,7 @@ const segmentEntity = {}
           })
         
         if (segment.intent.intent === 'create_transaction' && segment.words.some((item)=>item.value === 'CREATE' || item.value === 'CREATES'))  {
-          const { type, amount, category, date ,id} = transaction;
+          const { type, amount, category, date} = transaction;
                [type, Number(amount), category, !new Date(date).toString().includes('Invalid')].map((item, i) => {
             if (!item) {
                 setOpenMessage(true);
@@ -111,11 +116,21 @@ const segmentEntity = {}
             }
                });
           if (transaction.amount && transaction.category && transaction.date && transaction.type) {
-            return all(type, amount, category, date, categories,id)
+            return all(type, amount, category, date, categories)
         
-          }  }
+          }
+        }
+        if (segment.intent.intent === 'edit' && index) {
+          const id = transactions.find((item, i) => i === Number(index) - 1).id;
+          // console.log(id);
+          setEditItem(id)
+        }
+        if (segment.intent.intent === 'edit_done' && transaction.type && transaction.amount && transaction.category && transaction.date) {
+           const { type, amount, category, date} = transaction;
+            all(type, amount, category, date, categories)
+        }
 
-        if (segment.intent.intent === 'cancel_transaction') {
+        if (segment.intent.intent === 'cancel_transaction'  && segment.words.some((item)=>item.value === 'CLEAR')) {
                        clearTransaction()
          return setDataState([]);
         }
@@ -155,7 +170,7 @@ const segmentEntity = {}
            }) 
            
         if (title && Number(amount) && category && date && categoriesData) {
-              all (title, amount, category, date,categoriesData,uuidv4())
+              all (title, amount, category, date,categoriesData)
            }
 
         // console.log(title, amount, category, !new Date(date).toString().includes('Invalid'));
@@ -208,7 +223,7 @@ const segmentEntity = {}
     return false
   }
 
-  console.log(categories) 
+  // console.log(categories) 
    return (
     <>
        <Snackbar1 handleClose={handleClose1} openMessage={openMessage} failedEntity={failedEntity} allEntities={allEntities} />
@@ -216,7 +231,12 @@ const segmentEntity = {}
        <Dialog open={openDialog} handleClose={handleCloseDialog} />
        <SnackbarCategory open={openSnackbarCategory} handleClose={handleCloseCategoryMismatch}/>
        <SnackbarSuccess open={openSnackbarSuccess} handleClose={handleCloseSuccessSnackbar} />
-       
+       <SnackbarEditSuccess handleClose={ handleCloseEditSuccessSnackbar }/>
+       <DialogConfirmation handleClose={()=>setEditDialogOpen(false)} handleOk={() => {
+         clearTransaction()  
+         setDataState([])  
+         setEditDialogOpen(false)
+       }} open={editDialogOpen} />
        
        <Grid container spacing={2}>
          
@@ -236,7 +256,7 @@ const segmentEntity = {}
                        value={transaction.type}
                          onChange = {(e)=>{
                            setTransaction({ ...transaction, type: e.target.value })
-                           console.log(e.target.value === 'Income' ,transaction.category === '')
+                          //  console.log(e.target.value === 'Income' ,transaction.category === '')
                            if (e.target.value === 'Income' && transaction.category === '') {
                               changeCategories(incomeCategories)
                            }
@@ -296,25 +316,12 @@ const segmentEntity = {}
           </Grid>
           <Grid item xs={12}>
            <Button variant='outlined' color='primary' fullWidth className={classes.button} onClick={() => {
-              const { type, amount, category, date,id } = transaction;
-            all(type, amount, category, date, categories,id)
-             
-             if (edit) {
-               setEdit(false);
-               editDone(transaction)
-             }
-               setTransaction({
-  category:'',
-  amount: '',
-  type: '',
-    date: '2018-07-22',
-  id:uuidv4()
-});
+              const { type, amount, category, date} = transaction;
+            all(type, amount, category, date, categories)
            }}>{`${edit ? 'EDIT' :'CREATE'}`}</Button>
            
            <Button variant='outlined' color="secondary" fullWidth className={classes.button} onClick={() => {
-            clearTransaction()  
-            setDataState([])     
+               setEditDialogOpen(true)
            }}>CLEAR</Button>
           </Grid>
 

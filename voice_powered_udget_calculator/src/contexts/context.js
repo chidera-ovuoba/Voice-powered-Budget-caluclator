@@ -2,6 +2,7 @@ import React, { useReducer, createContext,useContext, useState, useEffect} from 
 import { v4 as uuidv4 } from 'uuid';
 import { expenseCategories, incomeCategories } from "../constant/categories";
 import reducer from './reducer';
+// import { SnackbarProvider, useSnackbar } from 'notistack';
 const initialState = {
     transactions:JSON.parse(localStorage.getItem('transactions'))?.transactions  || []
 };
@@ -13,8 +14,7 @@ const initialState1 = {
   category:'',
   amount: '',
   type: '',
-    date: '2018-07-22',
-  id:uuidv4()
+    date: '2018-07-22'
 }
 
 export const Provider = ({ children }) => {
@@ -43,6 +43,7 @@ export const Provider = ({ children }) => {
     }
     const clearTransaction = () => {
         dispatch({ type: 'CLEAR_TRANSACTION' });
+        setTransaction(initialState1)
         // console.log(transaction);
     }
     const changeCategories = (categories) =>{
@@ -51,18 +52,17 @@ export const Provider = ({ children }) => {
     useEffect(() => {
            if (edit) {
                dataState.map((item) => {
-                    if (item.type === editTypeAndTitle.type && item.title === editTypeAndTitle.title) {
-                        console.log(item.amount,parseFloat(editAmount))
-                        item.amount -= editAmount
-                        
-                        // item.amount = item.amount - parseFloat(editAmount)
+                   if (item.type === editTypeAndTitle.type && item.title === editTypeAndTitle.title) {
+                    item.amount -= editAmount
                    }
                 })
             }
     }, [edit])
-    // useEffect(() => {
-    //     setDataState((prev) => prev);
-    // }, [edit])
+     const editDone = (transaction) => {
+        dispatch({ type: 'EDIT_DONE', payload: { transaction:{...transaction,id:editId}, editId } })
+        setEditOpen(true);
+    }
+
       function checkCategories(category, categoriesData,type) {
         //   console.log('run');
             if (categoriesData === incomeCategories) {
@@ -100,15 +100,19 @@ export const Provider = ({ children }) => {
             }
         }  
     let index = 0;
-    const all = (title, amount, category, date, categoriesData,id) => {
+    const all = (title, amount, category, date, categoriesData) => {
          index = 0;
         //       setTransaction({ type: title, amount, category, date });
         // const { type, amount, category, date } = transaction;
         let type = title;
+
         [type, Number(amount), category, !new Date(date).toString().includes('Invalid')].map((item, i) => {
-            if (!item) {
+            if (!item && !editOpen && !openSnackbar.open && !openSnackbarCategory && !openSnackbarSuccess) {
                 setOpenMessage(true);
-                setFailedEntity((prev) => [...prev, i])
+                setFailedEntity((prev) => {
+                    if (openMessage) return prev
+                        return [...prev, i]
+                })
             
             }
         });
@@ -116,8 +120,13 @@ export const Provider = ({ children }) => {
         if (type && Number(amount) && category && !new Date(date).toString().includes('Invalid')) {
             // categoriesData.every((item) => item.type !== category
             checkCategories(category, categoriesData,type)
+            
+              if (edit) {
+               setEdit(false);
+               editDone(transaction)
+            }
             if (!edit) {
-                addTransaction({ id: id, type, amount, category, date })
+                addTransaction({ id: uuidv4(), type, amount, category, date })
             }
             
             dataState.some((item, i) => {
@@ -132,12 +141,14 @@ export const Provider = ({ children }) => {
                    console.log(i);
                     index = i
                     return true
-                }
+                } 
                 return false
             }) ?   dataState[index].amount += parseFloat(amount) :
-                setDataState([...dataState, { ...[(categoriesData.find((item) => item.type === category) && category) ? categoriesData.find((item) => item.type === category) : { color: `rgb(${Math.floor(Math.random() * 255)},${Math.floor(Math.random() * 255)},${Math.floor(Math.random() * 255)})`, type: category }][0], amount: parseFloat(amount), title: title,id:id }])
-                setOpenSnackbarSuccess(true)
-                
+                setDataState([...dataState, { ...[(categoriesData.find((item) => item.type === category) && category) ? categoriesData.find((item) => item.type === category) : { color: `rgb(${Math.floor(Math.random() * 10)},${Math.floor(Math.random() * 10)},${Math.floor(Math.random() * 255)})`, type: category }][0], amount: parseFloat(amount), title }])
+            if (!edit) {
+                setOpenSnackbarSuccess(true);
+            }
+                setTransaction(initialState1);
             
         }
     }
@@ -152,7 +163,9 @@ export const Provider = ({ children }) => {
     } 
     const handleCloseSuccessSnackbar = () => {
         setOpenSnackbarSuccess(false);
-        setEditOpen(false);
+    } 
+    const handleCloseEditSuccessSnackbar = () => {
+       setEditOpen(false);
     } 
       const handleClose2 = () => {
     setOpenSnackbar({open:false,category:'',type:''})
@@ -165,11 +178,7 @@ export const Provider = ({ children }) => {
         setEditTypeAndTitle({type:transactionToEdit.category,title:transactionToEdit.type})
         setEdit(true)
     }
-    const editDone = (transaction) => {
-        dispatch({ type: 'EDIT_DONE', payload: { transaction, editId } })
-        setEditOpen(true);
-    }
-
+   
 
 
     return (
@@ -195,6 +204,7 @@ export const Provider = ({ children }) => {
             openSnackbarCategory,
             handleCloseCategoryMismatch,
             handleCloseSuccessSnackbar,
+             handleCloseEditSuccessSnackbar,
             openSnackbarSuccess,
             transaction,
             setTransaction,
@@ -206,8 +216,8 @@ export const Provider = ({ children }) => {
             initialState1
           
         }}>
-        {children}
-        </ExpenseTrackerContext.Provider>
+                {children}
+               </ExpenseTrackerContext.Provider>
     )
 }
 export const useGlobalContext = () => useContext(ExpenseTrackerContext);

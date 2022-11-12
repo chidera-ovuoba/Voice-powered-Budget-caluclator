@@ -19,7 +19,7 @@ const Main = () => {
 
   return (
       <Card className={classes.root}>
-          <CardHeader title='Expense Tracker' subheader='Powered By Speechly' />
+          <CardHeader title='Expense Tracker' subheader='Powered With Speechly' />
           <CardContent>
               <Typography align='center' variant='h5'>Total Balance {incomeTotal < expenseTotal ?
             '-':''}${Math.abs(incomeTotal - expenseTotal)}</Typography>

@@ -12,9 +12,8 @@ const App = () => {
   const { speechState } = useSpeechContext();
   const main = useRef(null);
 
-  const executeScroll = () => {
-      main.current.scrollIntoView({ block: 'start',  behavior: 'smooth' })
-    }
+  const executeScroll = () => main.current.scrollIntoView();
+    
 
     useEffect(() => {
       if (speechState === SpeechState?.Recording) {
@@ -25,16 +24,16 @@ const App = () => {
   return (
     <div>
       <Grid container className={classes.grid} spacing={0} alignItems='center' justifyContent='center' style={{ height: '100vh' }}>
-        <Grid item xs={12}  lg={4} className={classes.mobile}  >
+        <Grid item xs={12}  md={3} className={classes.mobile}  >
           <Details title='income'/>
         </Grid>
-        <Grid item ref={main} xs={12}  lg={3} className={classes.main}>
+        <Grid item ref={main} xs={12}  md={4} className={classes.main}>
           <Main/>
         </Grid>
-         <Grid item xs={12}  lg={4} className={classes.desktop}  >
+         <Grid item xs={12}  md={4} className={classes.desktop}  >
           <Details title='income'/>
         </Grid>
-        <Grid item xs={12}  lg={4} className={classes.last}>
+        <Grid item xs={12}  md={3} className={classes.last}>
           <Details title='expense'/>
         </Grid>
       </Grid>
